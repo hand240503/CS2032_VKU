@@ -1,83 +1,148 @@
 import 'package:flutter/material.dart';
 
 void main() {
-  runApp(MiCardApp());
+  runApp(ExpenseTrackerApp());
 }
 
-class MiCardApp extends StatelessWidget {
+class ExpenseTrackerApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: Scaffold(
-        backgroundColor: Colors.teal,
-        body: SafeArea(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              CircleAvatar(
-                radius: 50.0,
-                backgroundImage: AssetImage('assets/images/image.jpeg'),
-              ),
-              Text(
-                'Nguyễn Đăng Hạ',
-                style: TextStyle(
-                  fontSize: 40.0,
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
+      title: 'Quản Lý Chi Tiêu',
+      theme: ThemeData(primarySwatch: Colors.green),
+      home: ExpenseHomePage(),
+    );
+  }
+}
+
+class ExpenseHomePage extends StatefulWidget {
+  @override
+  _ExpenseHomePageState createState() => _ExpenseHomePageState();
+}
+
+class _ExpenseHomePageState extends State<ExpenseHomePage> {
+  double totalBalance = 0.0;
+  List<Map<String, dynamic>> transactions = [];
+
+  void _addTransaction(String title, double amount, bool isIncome) {
+    setState(() {
+      totalBalance += isIncome ? amount : -amount;
+      transactions.add({
+        'title': title,
+        'amount': amount,
+        'isIncome': isIncome,
+        'date': DateTime.now(),
+      });
+    });
+  }
+
+  void _showAddTransactionDialog() {
+    final _titleController = TextEditingController();
+    final _amountController = TextEditingController();
+    bool isIncome = true;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Thêm Giao Dịch'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: _titleController,
+              decoration: InputDecoration(labelText: 'Tiêu đề'),
+            ),
+            TextField(
+              controller: _amountController,
+              decoration: InputDecoration(labelText: 'Số tiền'),
+              keyboardType: TextInputType.number,
+            ),
+            Row(
+              children: [
+                Text('Thu nhập'),
+                Switch(
+                  value: isIncome,
+                  onChanged: (value) {
+                    setState(() {
+                      isIncome = value;
+                    });
+                  },
                 ),
-              ),
-              Text(
-                'Mobile Developer',
-                style: TextStyle(
-                  color: Colors.teal[100],
-                  fontSize: 20.0,
-                  letterSpacing: 2.5,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              SizedBox(
-                height: 20.0,
-                width: 150.0,
-                child: Divider(
-                  color: Colors.teal.shade100,
-                ),
-              ),
-              Card(
-                margin: EdgeInsets.symmetric(vertical: 10.0, horizontal: 25.0),
-                child: ListTile(
-                  leading: Icon(
-                    Icons.phone,
-                    color: Colors.teal,
-                  ),
-                  title: Text(
-                    '0388529096',
-                    style: TextStyle(
-                      color: Colors.teal.shade900,
-                      fontSize: 20.0,
-                    ),
-                  ),
-                ),
-              ),
-              Card(
-                margin: EdgeInsets.symmetric(vertical: 10.0, horizontal: 25.0),
-                child: ListTile(
-                  leading: Icon(
-                    Icons.email,
-                    color: Colors.teal,
-                  ),
-                  title: Text(
-                    'hand.22itb@vku.udn.vn',
-                    style: TextStyle(
-                      fontSize: 20.0,
-                      color: Colors.teal.shade900,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
+                Text('Chi tiêu'),
+              ],
+            )
+          ],
         ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+            },
+            child: Text('Hủy'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (_titleController.text.isNotEmpty && _amountController.text.isNotEmpty) {
+                _addTransaction(
+                  _titleController.text,
+                  double.parse(_amountController.text),
+                  isIncome,
+                );
+                Navigator.of(ctx).pop();
+              }
+            },
+            child: Text('Thêm'),
+          )
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Quản Lý Chi Tiêu')),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            Text(
+              'Số dư hiện tại: \$${totalBalance.toStringAsFixed(2)}',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 20),
+            Expanded(
+              child: ListView.builder(
+                itemCount: transactions.length,
+                itemBuilder: (ctx, index) {
+                  final tx = transactions[index];
+                  return Card(
+                    child: ListTile(
+                      leading: Icon(
+                        tx['isIncome'] ? Icons.arrow_downward : Icons.arrow_upward,
+                        color: tx['isIncome'] ? Colors.green : Colors.red,
+                      ),
+                      title: Text(tx['title']),
+                      subtitle: Text('${tx['date'].toLocal()}'),
+                      trailing: Text(
+                        '${tx['isIncome'] ? '+' : '-'}\$${tx['amount'].toStringAsFixed(2)}',
+                        style: TextStyle(
+                          color: tx['isIncome'] ? Colors.green : Colors.red,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showAddTransactionDialog,
+        child: Icon(Icons.add),
       ),
     );
   }
